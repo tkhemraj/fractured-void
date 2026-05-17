@@ -1,0 +1,203 @@
+{
+  "rmn_001": {
+    "id": "rmn_001",
+    "title": "Supply Run",
+    "giver": "mira_dahl",
+    "faction": "the_remnant",
+    "type": "trade",
+    "min_relation": -10,
+    "description": "The Remnant needs organics. Bad harvest season across three sectors. We're not asking for charity — we're asking for a trader who won't report us to Helix.",
+    "dialogue_intro": [
+      "You found us. That's either resourcefulness or desperation.",
+      "Either works. We need 50 tons of organics, sector 321, no questions asked.",
+      "Helix has a price on anything heading our way. Your problem, not mine.",
+      "We pay fair. 120 per ton, plus 2,000 hazard bonus if you make it clean."
+    ],
+    "dialogue_complete": [
+      "On time. Undeclared. I'm impressed.",
+      "The colonists on Remnant's Hope will eat this winter. That matters.",
+      "You've got more runs if you want them. We can use someone with your nerve."
+    ],
+    "objectives": [
+      {"type": "carry", "item": "organics", "quantity": 50},
+      {"type": "deliver_to_sector", "sector": 321}
+    ],
+    "reward_credits": 8000,
+    "reward_relation": {"the_remnant": 15, "helix_commerce": -5},
+    "reward_experience": 150,
+    "available_at_sectors": [310, 315, 320, 325]
+  },
+  "rmn_002": {
+    "id": "rmn_002",
+    "title": "Clear the Lane",
+    "giver": "mira_dahl",
+    "faction": "the_remnant",
+    "type": "combat",
+    "min_relation": 10,
+    "description": "Apex has a patrol sitting on the warp link between sectors 321 and 350. Two enforcer-class ships. Our supply convoys can't move while they're there.",
+    "dialogue_intro": [
+      "We have a problem with three hundred tons of food and nowhere to put it.",
+      "Apex has two Enforcers parked at the 321-350 junction. Toll collectors with guns.",
+      "I need them gone. Not negotiated with. Gone.",
+      "Twenty thousand credits and my personal guarantee: you'll have friends in every Remnant sector after this."
+    ],
+    "dialogue_complete": [
+      "Clean work. The convoy got through this morning.",
+      "Apex will replace those patrols eventually. But we'll be watching.",
+      "You're not just a trader anymore, Korr. Whether you like it or not."
+    ],
+    "objectives": [
+      {"type": "combat_victory", "faction": "apex_syndicate", "count": 2}
+    ],
+    "reward_credits": 20000,
+    "reward_relation": {"the_remnant": 25, "apex_syndicate": -20},
+    "reward_experience": 400,
+    "available_at_sectors": [321, 322, 323]
+  },
+  "drift_001": {
+    "id": "drift_001",
+    "title": "Blind Delivery",
+    "giver": "vex_slick",
+    "faction": "drift_cartel",
+    "type": "trade",
+    "min_relation": -20,
+    "description": "You don't ask what's in it. I don't tell you. You pick it up, you drop it off, you walk away richer. Simple business.",
+    "dialogue_intro": [
+      "Word travels. You're the pilot who told Apex to go to hell.",
+      "I respect that. Professionally speaking.",
+      "I've got a cargo that needs to move from 241 to 290. Twenty units. Light.",
+      "Twelve thousand flat. Don't open it. Don't scan it. Don't be late."
+    ],
+    "dialogue_complete": [
+      "Right package, right sector, right time. You're better at this than most.",
+      "The Cartel has work if you want it. Good work. Paid work.",
+      "And Korr — what's in those packages? Medical supplies. Seriously. Helix has a monopoly, we don't."
+    ],
+    "objectives": [
+      {"type": "carry", "item": "contraband", "quantity": 20},
+      {"type": "deliver_to_sector", "sector": 290}
+    ],
+    "reward_credits": 12000,
+    "reward_relation": {"drift_cartel": 20},
+    "reward_experience": 200,
+    "available_at_sectors": [241, 250, 260]
+  },
+  "iron_001": {
+    "id": "iron_001",
+    "title": "Salvage Recovery",
+    "giver": "overseer_keld",
+    "faction": "ironveil_trading",
+    "type": "explore",
+    "min_relation": 0,
+    "description": "One of our survey ships went dark near the Fracture Zone boundary. We need the salvage data it was carrying. The ship is in sector 399.",
+    "dialogue_intro": [
+      "I'll be direct with you. We lost a ship three weeks ago.",
+      "Survey vessel. Entered sector 399 to chart the Fracture boundary. Never came back.",
+      "We've recovered the signal — the ship is there, drifting. Hull intact.",
+      "We need the survey data. Not the ship. Just what's in the data core.",
+      "Fifteen thousand credits. Don't linger at 399 longer than necessary."
+    ],
+    "dialogue_complete": [
+      "The data is... extensive. More than we expected.",
+      "I won't tell you what it says. Ironveil policy. But I'll tell you this: your hazard bonus is doubled.",
+      "And stay away from sector 399 for a while. Consider that professional advice."
+    ],
+    "objectives": [
+      {"type": "visit_sector", "sector": 399}
+    ],
+    "reward_credits": 30000,
+    "reward_relation": {"ironveil_trading": 20},
+    "reward_experience": 500,
+    "available_at_sectors": [161, 180, 200, 220]
+  },
+  "ghost_001": {
+    "id": "ghost_001",
+    "title": "The Signal",
+    "giver": "ghost_signal",
+    "faction": "ghost_fleet",
+    "type": "explore",
+    "min_relation": -100,
+    "description": "A repeating transmission from inside the Fracture Zone. The coordinates it provides lead to sector 420. No one who has followed it before has reported back.",
+    "dialogue_intro": [
+      "[SIGNAL-VII // FRACTURE ZONE // AUTHENTICATED]",
+      "WE REMEMBER THE PILOT WHO WOULD NOT FIRE.",
+      "WE HAVE WAITED FOR ONE WHO COULD CHOOSE.",
+      "COORDINATES: SECTOR 420 // APPROACH ALONE // WE WILL NOT FIRE.",
+      "[END TRANSMISSION]"
+    ],
+    "dialogue_complete": [
+      "[SIGNAL-VII // VERIFICATION COMPLETE]",
+      "YOU CAME. THIS IS NOTED.",
+      "THE FRACTURE WAS NOT AN ACCIDENT.",
+      "WHEN YOU ARE READY TO UNDERSTAND, RETURN.",
+      "[END TRANSMISSION]"
+    ],
+    "objectives": [
+      {"type": "visit_sector", "sector": 420}
+    ],
+    "reward_credits": 0,
+    "reward_relation": {"ghost_fleet": 50},
+    "reward_experience": 1000,
+    "available_at_sectors": [400, 401, 402, 403]
+  },
+  "helix_001": {
+    "id": "helix_001",
+    "title": "Pharmaceutical Run",
+    "giver": "dr_rekk",
+    "faction": "helix_commerce",
+    "type": "trade",
+    "min_relation": -5,
+    "description": "Off the record: a colony in sector 85 has an outbreak. The official Helix response will take three weeks. If you move medicine there in the next four days, I'll make sure you're compensated.",
+    "dialogue_intro": [
+      "This isn't an official Helix request. This is me, personally.",
+      "There's a colony outbreak in sector 85. Respiratory. Sixty affected, twelve critical.",
+      "The official channels are... slow. Politics. You know how it is.",
+      "I need forty units of medicine there before the situation becomes irreversible.",
+      "I'll pay from my own discretionary fund. Eight thousand credits. Nobody hears about this."
+    ],
+    "dialogue_complete": [
+      "They'll survive. All of them, I think.",
+      "You should know — Helix knew about the outbreak before I did.",
+      "The delay was intentional. Market pressure on that colony's mining contract.",
+      "I'm telling you this because you should know who you're dealing with when you trade with us."
+    ],
+    "objectives": [
+      {"type": "carry", "item": "medicine", "quantity": 40},
+      {"type": "deliver_to_sector", "sector": 85}
+    ],
+    "reward_credits": 8000,
+    "reward_relation": {"helix_commerce": 10, "the_remnant": 5},
+    "reward_experience": 200,
+    "available_at_sectors": [81, 90, 100, 120]
+  },
+  "apex_001": {
+    "id": "apex_001",
+    "title": "Old Debts",
+    "giver": "commander_voss",
+    "faction": "apex_syndicate",
+    "type": "combat",
+    "min_relation": -50,
+    "description": "Voss has found you. She has a proposition — not a request. Eliminate a Drift Cartel operation that's been hitting Apex supply lines. Or she files the full report on Sector 7.",
+    "dialogue_intro": [
+      "Don't reach for anything. I'm alone.",
+      "I know where you've been, Korr. Every sector. Every port.",
+      "The Sector 7 incident report is sitting on my desk. Incomplete.",
+      "There's a Cartel operation in sector 260 hitting our supply lines. Eight runs in six weeks.",
+      "Shut it down. Three ships. Then we're square and that report stays incomplete.",
+      "This isn't a negotiation."
+    ],
+    "dialogue_complete": [
+      "Efficient. Almost nostalgic.",
+      "The report stays filed. Incomplete.",
+      "Don't mistake this for warmth, Korr. I'm investing in a useful asset.",
+      "When I need you again, you'll hear from me."
+    ],
+    "objectives": [
+      {"type": "combat_victory", "faction": "drift_cartel", "count": 3}
+    ],
+    "reward_credits": 25000,
+    "reward_relation": {"apex_syndicate": 15, "drift_cartel": -25},
+    "reward_experience": 600,
+    "available_at_sectors": [1, 10, 20, 30, 40]
+  }
+}

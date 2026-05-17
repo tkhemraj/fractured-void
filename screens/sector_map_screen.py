@@ -63,13 +63,35 @@ class SectorMapScreen:
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN and self.selected_sector:
                 return self._try_warp_to(self.selected_sector)
-            if event.key == pygame.K_p and self.selected_sector and self.selected_sector.has_port():
-                if self.selected_sector.sector_id == self.state.player.current_sector:
-                    return "trading"
             if event.key == pygame.K_c:
                 current = self.galaxy.sectors.get(self.state.player.current_sector)
                 if current:
                     self.map_renderer.center_on_sector(current)
+
+            current = self.galaxy.sectors.get(self.state.player.current_sector)
+            if not current:
+                return None
+
+            if event.key == pygame.K_p:
+                if current.has_port():
+                    return "trading"
+                elif current.has_planet():
+                    self.state.combat_context["planet"] = current.planet
+                    self.state.combat_context["sector_name"] = current.name
+                    return "planet"
+
+            if event.key == pygame.K_u:
+                self.state.combat_context["sector_name"] = current.name
+                return "shipyard"
+
+            if event.key == pygame.K_m:
+                from engine.mission_manager import missions as mission_mgr
+                mission_mgr.load()
+                available = mission_mgr.get_available_for_sector(
+                    current.sector_id, self.state.player.faction_relations
+                )
+                self.state.combat_context["available_missions"] = available
+                return "mission_board"
 
         elif event.type == pygame.MOUSEMOTION and (event.buttons[1] or event.buttons[2]):
             self.map_renderer.pan(event.rel[0], event.rel[1])
@@ -103,6 +125,13 @@ class SectorMapScreen:
         self.map_renderer.center_on_sector(target)
 
         self._log(f"Warped to sector {target.sector_id}: {target.name}")
+
+        from engine.event_bus import bus as _bus
+        _bus.post("sector_entered", sector_id=target.sector_id)
+        from engine.mission_manager import missions as _missions
+        _missions.load()
+        if self.state.cargo:
+            _missions.check_carry_objectives(self.state.cargo.contents)
 
         # Random encounter check (20% in hostile zones, 10% otherwise)
         import random
@@ -198,7 +227,7 @@ class SectorMapScreen:
 
         # Controls hint (bottom)
         hints = font_sm.render(
-            "Click=Select  Enter/DblClick=Warp  P=Trade  C=Center  Scroll=Zoom  MMB=Pan",
+            "Click=Select  Enter=Warp  P=Trade/Planet  U=Shipyard  M=Missions  C=Center  Scroll=Zoom  MMB=Pan",
             True, (40, 70, 40)
         )
         surface.blit(hints, (10, self.height - 20))

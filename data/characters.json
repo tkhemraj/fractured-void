@@ -1,0 +1,74 @@
+{
+  "mira_dahl": {
+    "id": "mira_dahl",
+    "name": "Mira Dahl",
+    "title": "Commander, The Remnant",
+    "faction": "the_remnant",
+    "portrait_style": "remnant",
+    "hair_color": [180, 100, 60],
+    "skin_color": [160, 110, 80],
+    "eye_color": [80, 160, 220],
+    "scar": true,
+    "lore": "Former colony administrator on Ashford before Apex burned it. Now runs Remnant operations from a stripped cruiser in Sector 321. She doesn't ask twice."
+  },
+  "vex_slick": {
+    "id": "vex_slick",
+    "name": "Vex 'Slick' Orano",
+    "title": "Fixer, Drift Cartel",
+    "faction": "drift_cartel",
+    "portrait_style": "drift",
+    "hair_color": [40, 40, 60],
+    "skin_color": [100, 80, 70],
+    "eye_color": [180, 80, 220],
+    "scar": false,
+    "lore": "Nobody knows Slick's real name. Nobody asks. He's been moving product across fourteen sectors for eight years without a single Syndicate intercept. Either very good or very connected. Probably both."
+  },
+  "overseer_keld": {
+    "id": "overseer_keld",
+    "name": "Overseer Keld Vrann",
+    "title": "Regional Director, Ironveil Trading",
+    "faction": "ironveil_trading",
+    "portrait_style": "corporate",
+    "hair_color": [220, 210, 200],
+    "skin_color": [200, 170, 150],
+    "eye_color": [120, 100, 80],
+    "scar": false,
+    "lore": "Vrann has been Ironveil's face in this region for twenty years. He's seen three Syndicate directors cycle through. He doesn't get excited about much, but the Ghost Fleet reports have him rattled."
+  },
+  "dr_rekk": {
+    "id": "dr_rekk",
+    "name": "Dr. Avin Rekk",
+    "title": "Senior Xenologist, Helix Commerce",
+    "faction": "helix_commerce",
+    "portrait_style": "scientist",
+    "hair_color": [80, 60, 40],
+    "skin_color": [140, 120, 100],
+    "eye_color": [60, 160, 80],
+    "scar": false,
+    "lore": "The only person Helix sent into the Fracture Zone and got back. He won't talk about what he saw. The scans he brought back are classified above the CEO's clearance level."
+  },
+  "commander_voss": {
+    "id": "commander_voss",
+    "name": "Commander Sera Voss",
+    "title": "Strike Commander, Apex Syndicate",
+    "faction": "apex_syndicate",
+    "portrait_style": "military",
+    "hair_color": [30, 30, 30],
+    "skin_color": [180, 155, 140],
+    "eye_color": [200, 60, 40],
+    "scar": true,
+    "lore": "She signed your discharge papers. She wasn't happy about it — not because she disagreed with the order you refused, but because you were her best pilot. There's unfinished business between you."
+  },
+  "ghost_signal": {
+    "id": "ghost_signal",
+    "name": "SIGNAL-VII",
+    "title": "Ghost Fleet Transmission",
+    "faction": "ghost_fleet",
+    "portrait_style": "ghost",
+    "hair_color": [100, 220, 220],
+    "skin_color": [40, 80, 80],
+    "eye_color": [100, 220, 220],
+    "scar": false,
+    "lore": "Not a person. A repeating signal from deep inside the Fracture Zone. The content changes based on who decodes it. Yours says: 'We remember the pilot who would not fire.'"
+  }
+}
