@@ -1,0 +1,104 @@
+{
+  "fuel_ore": {
+    "id": "fuel_ore",
+    "name": "Fuel Ore",
+    "unit": "ton",
+    "base_price": 80,
+    "variance": 40,
+    "weight": 1,
+    "description": "Raw mineral used in jump gate drives and ship propulsion. Always in demand.",
+    "category": "raw"
+  },
+  "organics": {
+    "id": "organics",
+    "name": "Organics",
+    "unit": "ton",
+    "base_price": 60,
+    "variance": 30,
+    "weight": 1,
+    "description": "Food, medicine precursors, biological materials. Essential for every colonized sector.",
+    "category": "raw"
+  },
+  "equipment": {
+    "id": "equipment",
+    "name": "Equipment",
+    "unit": "unit",
+    "base_price": 120,
+    "variance": 60,
+    "weight": 1,
+    "description": "Manufactured goods: machinery, electronics, tools. High margin, variable supply.",
+    "category": "manufactured"
+  },
+  "arms": {
+    "id": "arms",
+    "name": "Arms",
+    "unit": "crate",
+    "base_price": 500,
+    "variance": 200,
+    "weight": 2,
+    "description": "Weapons, ammunition, military hardware. Illegal in some sectors. Very profitable.",
+    "category": "contraband",
+    "restricted": ["helix_commerce", "the_remnant"]
+  },
+  "medicine": {
+    "id": "medicine",
+    "name": "Medicine",
+    "unit": "unit",
+    "base_price": 200,
+    "variance": 80,
+    "weight": 1,
+    "description": "Helix Commerce-manufactured pharmaceuticals. Life-saving and price-gouged.",
+    "category": "manufactured"
+  },
+  "contraband": {
+    "id": "contraband",
+    "name": "Contraband",
+    "unit": "parcel",
+    "base_price": 800,
+    "variance": 400,
+    "weight": 1,
+    "description": "Whatever someone wants moved without documentation. Don't ask what's in it.",
+    "category": "contraband",
+    "restricted": ["apex_syndicate", "helix_commerce", "ironveil_trading"]
+  },
+  "metals": {
+    "id": "metals",
+    "name": "Refined Metals",
+    "unit": "ton",
+    "base_price": 100,
+    "variance": 40,
+    "weight": 2,
+    "description": "Processed alloys and refined metals for construction and manufacturing.",
+    "category": "raw"
+  },
+  "salvage": {
+    "id": "salvage",
+    "name": "Salvage",
+    "unit": "unit",
+    "base_price": 150,
+    "variance": 100,
+    "weight": 2,
+    "description": "Salvaged components from destroyed ships and abandoned stations. Variable quality.",
+    "category": "raw"
+  },
+  "information": {
+    "id": "information",
+    "name": "Information",
+    "unit": "chip",
+    "base_price": 1000,
+    "variance": 600,
+    "weight": 0,
+    "description": "Trade secrets, navigation data, corp intel. Massless and priceless.",
+    "category": "contraband"
+  },
+  "colonists": {
+    "id": "colonists",
+    "name": "Colonists",
+    "unit": "group",
+    "base_price": 50,
+    "variance": 10,
+    "weight": 3,
+    "description": "People willing to settle a new world. They need food, shelter, and hope.",
+    "category": "special"
+  }
+}

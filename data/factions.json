@@ -1,0 +1,68 @@
+{
+  "apex_syndicate": {
+    "id": "apex_syndicate",
+    "name": "Apex Syndicate",
+    "short": "APEX",
+    "color": [220, 60, 40],
+    "description": "Military-industrial powerhouse. Controls weapons manufacturing and mercenary contracts. Ruthless, efficient, and very well-armed.",
+    "base_sector": 1,
+    "trades": ["equipment", "arms"],
+    "starting_relation": -30,
+    "lore": "Founded by Admiral-turned-CEO Mirande Voss after the Corporate Wars, Apex militarized commerce itself. Their ships are warships with cargo bays, not the other way around."
+  },
+  "helix_commerce": {
+    "id": "helix_commerce",
+    "name": "Helix Commerce",
+    "short": "HELIX",
+    "color": [60, 180, 100],
+    "description": "Controls food, medicine, and life support across forty sectors. They look benevolent. They are not.",
+    "base_sector": 50,
+    "trades": ["organics", "medicine"],
+    "starting_relation": 0,
+    "lore": "Helix's motto is 'All Life Matters.' What they don't say is that they own the means of keeping it going. They crashed the Fracture Event cover-up and walked away richer."
+  },
+  "ironveil_trading": {
+    "id": "ironveil_trading",
+    "name": "Ironveil Trading Co.",
+    "short": "ITV",
+    "color": [160, 130, 70],
+    "description": "Old money. Controls raw materials, mining rights, and the jump gate fuel supply. Conservative and territorial.",
+    "base_sector": 100,
+    "trades": ["fuel_ore", "metals"],
+    "starting_relation": 10,
+    "lore": "The oldest corp still standing. Ironveil predates the Consolidation Wars. Their CEO is 140 years old and refuses to die. Some say she was there when the first jump gate fired."
+  },
+  "drift_cartel": {
+    "id": "drift_cartel",
+    "name": "Drift Cartel",
+    "short": "DRIFT",
+    "color": [180, 80, 220],
+    "description": "Organized crime network. Controls black markets, information, and the routes no corp will chart. Dangerous, but useful.",
+    "base_sector": 200,
+    "trades": ["contraband", "information"],
+    "starting_relation": 5,
+    "lore": "The Drift didn't start as criminals — they were independent traders the corps squeezed out. Now they run everything the corps won't touch, and some things the corps wish they did."
+  },
+  "the_remnant": {
+    "id": "the_remnant",
+    "name": "The Remnant",
+    "short": "RMN",
+    "color": [80, 160, 220],
+    "description": "Rebel alliance of ex-colonists, former corp workers, and idealists. Disorganized but passionate. Fighting for free sectors.",
+    "base_sector": 300,
+    "trades": ["salvage", "organics"],
+    "starting_relation": 20,
+    "lore": "After the Sector 7 Massacre, the Remnant stopped asking for rights and started fighting for them. Vael Korr is one of the reasons they still exist — though Vael doesn't know that yet."
+  },
+  "ghost_fleet": {
+    "id": "ghost_fleet",
+    "name": "Ghost Fleet",
+    "short": "GHOST",
+    "color": [100, 220, 220],
+    "description": "AI warships that emerged from the Fracture rift. Territorial, ancient, and impossible to negotiate with. Or so everyone thought.",
+    "base_sector": 400,
+    "trades": [],
+    "starting_relation": 0,
+    "lore": "They came through the rift fifty years ago and have not stopped moving since. Every Syndicate probe sent to study them has been destroyed. One Remnant pilot came back speaking of a signal from the other side."
+  }
+}
