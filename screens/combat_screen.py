@@ -48,6 +48,8 @@ class CombatScreen:
         self.in_fracture_zone = in_fracture_zone
         self.result_timer = 0.0
         self.result_shown = False
+        self.space.reset_particles()
+        self.hud.init()
         self._flash_messages = []
 
         # Choose first available missile
@@ -70,9 +72,16 @@ class CombatScreen:
 
     def _on_player_hit(self, damage: float) -> None:
         self._flash("HIT!", (255, 60, 60), duration=0.4)
+        self.hud.shake(intensity=6.0 + damage * 0.05)
+        if self.engine:
+            self.space.emit_hit_sparks(self.engine.player.pos)
 
-    def _on_enemy_destroyed(self, faction: str) -> None:
+    def _on_enemy_destroyed(self, faction: str, **kw) -> None:
         self._flash("ENEMY DESTROYED", (100, 255, 100), duration=1.2)
+        if self.engine:
+            for enemy in self.engine.enemies:
+                if not enemy.alive and enemy.faction == faction:
+                    self.space.emit_explosion(enemy.pos, large=True)
 
     def _on_missile_fired(self, weapon: str, remaining: int) -> None:
         self._flash(f"MISSILE AWAY  ({remaining} left)", (255, 200, 60), duration=0.8)
@@ -127,7 +136,9 @@ class CombatScreen:
         }
 
         self.engine.update(dt, inputs)
-        self.space.update(dt, speed=self.engine.player.velocity.length() * 0.05 + 2.0)
+        self.space.update(dt, player_ship=self.engine.player,
+                          speed=self.engine.player.velocity.length() * 0.04 + 2.0)
+        self.hud.update_shake(dt)
 
         for msg in self._flash_messages:
             msg["timer"] += dt
@@ -145,12 +156,13 @@ class CombatScreen:
             surface.fill((0, 0, 0))
             return
 
+        shake_offset = self.hud.update_shake(0.016)
         target = self.engine.current_target
         self.space.draw_background(surface, self.in_fracture_zone)
         self.space.draw_ships(surface, self.engine.enemies, target)
         self.space.draw_projectiles(surface, self.engine.projectiles)
-        self.space.draw_explosions(surface, self.engine.explosions)
-        self.hud.draw(surface, self.engine, 0.016, self.ship_name)
+        self.space.draw_post_effects(surface)
+        self.hud.draw(surface, self.engine, 0.016, self.ship_name, shake_offset)
         self._draw_flash_messages(surface)
         self._draw_controls_hint(surface)
 

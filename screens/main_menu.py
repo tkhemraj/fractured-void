@@ -1,69 +1,130 @@
 """
-Main menu screen with the game's title and backstory introduction.
+Main menu — dramatic title screen with animated ship silhouette,
+procedural nebula background, and cinematic text reveal.
 """
 import math
+import random
 import pygame
+from rendering.art import (
+    draw_ship, draw_faction_logo, glow_text, get_scanline_overlay,
+    HUD_GREEN, HUD_AMBER, HUD_DIM, FACTION_COLORS, METAL_DARK,
+)
 
+TITLE    = "FRACTURED VOID"
+SUBTITLE = "Trade. Fight. Survive."
+TAGLINE  = "2387 — Five corporations own the stars. You own nothing but your ship."
 
-TITLE = "FRACTURED VOID"
-SUBTITLE = "A game of trade, war, and survival in the ruins of empire"
-TAGLINE = "Where corporations own the stars, and you own nothing but your ship."
+MENU_ITEMS = ["NEW GAME", "LOAD GAME", "QUIT"]
 
-LORE_LINES = [
-    "2387. The Corporate Consolidation Wars ended seventeen years ago.",
+LORE_SLIDES = [
+    "Year 2387. The Corporate Consolidation Wars ended seventeen years ago.",
     "Five Syndicates carved up human space and called it peace.",
-    "",
-    "You are Vael Korr — ex-Apex Syndicate pilot, recently discharged.",
+    "You are VAEL KORR — ex-Apex Syndicate pilot. Discharged.",
     "Your ship: The Cinder Pact. 80 tons of battered freight capacity.",
-    "Your credits: 5,000. Your agenda: survival.",
-    "",
     "The Fracture Zone is spreading. Ghost Fleet vessels cross sectors",
     "that were safe six months ago. Something is happening out there.",
-    "",
     "Nobody is coming to explain it to you.",
 ]
 
-MENU_ITEMS = ["NEW GAME", "LOAD GAME", "QUIT"]
+
+class Star2D:
+    __slots__ = ["x", "y", "size", "speed", "color", "alpha"]
+
+    def __init__(self, rng, W, H):
+        self.x = rng.uniform(0, W)
+        self.y = rng.uniform(0, H)
+        self.speed = rng.uniform(0.1, 0.6)
+        self.size = rng.choice([1, 1, 1, 2])
+        choices = [(255, 255, 255), (200, 210, 255), (255, 240, 210), (180, 200, 255)]
+        self.color = rng.choice(choices)
+        self.alpha = rng.randint(100, 240)
+
+    def update(self, dt, W):
+        self.x -= self.speed * dt * 20
+        if self.x < 0:
+            self.x = W
+
+    def draw(self, surf):
+        a = int(self.alpha)
+        c = tuple(int(ch * a / 255) for ch in self.color)
+        if self.size == 1:
+            surf.set_at((int(self.x), int(self.y)), c)
+        else:
+            pygame.draw.circle(surf, c, (int(self.x), int(self.y)), self.size)
+
+
+class NebulaBackground:
+    def __init__(self, W, H):
+        rng = random.Random(42)
+        self._surf = pygame.Surface((W, H), pygame.SRCALPHA)
+        palettes = [
+            [(30, 10, 60), (10, 30, 80), (60, 10, 40)],
+            [(10, 40, 60), (40, 10, 70), (20, 50, 30)],
+        ]
+        pal = rng.choice(palettes)
+        for _ in range(12):
+            cx = rng.randint(0, W)
+            cy = rng.randint(0, H)
+            r  = rng.randint(150, 500)
+            col = rng.choice(pal)
+            for i in range(r, 0, -max(1, r // 12)):
+                alpha = int(20 * (i / r) * (1 - i / r) * 4)
+                pygame.draw.circle(self._surf, col + (alpha,), (cx, cy), i)
+
+    def draw(self, surf):
+        surf.blit(self._surf, (0, 0))
 
 
 class MainMenu:
     def __init__(self, width: int, height: int):
-        self.width = width
-        self.height = height
+        self.W = width
+        self.H = height
         self.fonts: dict = {}
         self._initialized = False
         self.selected = 0
-        self._star_field = self._build_stars()
+        self._rng = random.Random(99)
+        self._stars = [Star2D(self._rng, width, height) for _ in range(250)]
+        self._nebula: NebulaBackground | None = None
         self._time = 0.0
-        self._lore_index = 0
+        self._lore_idx = 0
         self._lore_timer = 0.0
+        self._lore_char = 0
+        self._scanline: pygame.Surface | None = None
+        # Ship silhouettes drifting across background
+        self._bg_ships = self._init_bg_ships()
+
+    def _init_bg_ships(self):
+        ships = []
+        for sid, x_start, y_frac, size_base, speed in [
+            ("apex_enforcer",    -200, 0.18, 55, 18),
+            ("merchant_hauler",  self.W + 100, 0.72, 40, -12),
+            ("scout_marauder",   -100, 0.55, 30, 22),
+            ("ghost_wraith",     self.W // 2, 0.85, 35, 8),
+        ]:
+            ships.append({
+                "id": sid, "x": float(x_start),
+                "y": self.H * y_frac, "size": size_base,
+                "speed": speed, "alpha": 35,
+            })
+        return ships
 
     def init_fonts(self) -> None:
         if self._initialized:
             return
         try:
             mono = pygame.font.match_font("courier,couriernew,dejavusansmono")
-            self.fonts["sm"] = pygame.font.Font(mono, 14)
-            self.fonts["md"] = pygame.font.Font(mono, 18)
-            self.fonts["lg"] = pygame.font.Font(mono, 30)
-            self.fonts["xl"] = pygame.font.Font(mono, 60)
-            self.fonts["tag"] = pygame.font.Font(mono, 15)
+            self.fonts["xs"]    = pygame.font.Font(mono, 12)
+            self.fonts["sm"]    = pygame.font.Font(mono, 15)
+            self.fonts["md"]    = pygame.font.Font(mono, 20)
+            self.fonts["lg"]    = pygame.font.Font(mono, 32)
+            self.fonts["xl"]    = pygame.font.Font(mono, 68)
+            self.fonts["tag"]   = pygame.font.Font(mono, 16)
         except Exception:
-            self.fonts["sm"] = pygame.font.SysFont("monospace", 14)
-            self.fonts["md"] = pygame.font.SysFont("monospace", 18)
-            self.fonts["lg"] = pygame.font.SysFont("monospace", 30)
-            self.fonts["xl"] = pygame.font.SysFont("monospace", 60)
-            self.fonts["tag"] = pygame.font.SysFont("monospace", 15)
+            for k, s in [("xs",12),("sm",15),("md",20),("lg",32),("xl",68),("tag",16)]:
+                self.fonts[k] = pygame.font.SysFont("monospace", s)
+        self._nebula = NebulaBackground(self.W, self.H)
+        self._scanline = get_scanline_overlay(self.W, self.H, alpha=28)
         self._initialized = True
-
-    def _build_stars(self) -> list[tuple[float, float, float, float]]:
-        import random
-        rng = random.Random(99)
-        return [
-            (rng.uniform(0, self.width), rng.uniform(0, self.height),
-             rng.uniform(0.2, 1.5), rng.uniform(0.1, 0.8))
-            for _ in range(200)
-        ]
 
     def handle_event(self, event: pygame.event.Event) -> str | None:
         if not self._initialized:
@@ -75,123 +136,193 @@ class MainMenu:
                 self.selected = (self.selected + 1) % len(MENU_ITEMS)
             elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
                 return self._activate()
-        elif event.type == pygame.MOUSEMOTION:
-            pass
-        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            pass
         return None
 
     def _activate(self) -> str | None:
-        item = MENU_ITEMS[self.selected]
-        if item == "NEW GAME":
-            return "new_game"
-        elif item == "LOAD GAME":
-            return "load_game"
-        elif item == "QUIT":
-            return "quit"
-        return None
+        mapping = {"NEW GAME": "new_game", "LOAD GAME": "load_game", "QUIT": "quit"}
+        return mapping.get(MENU_ITEMS[self.selected])
 
     def update(self, dt: float) -> None:
         if not self._initialized:
             self.init_fonts()
         self._time += dt
+
+        for star in self._stars:
+            star.update(dt, self.W)
+
+        for ship in self._bg_ships:
+            ship["x"] += ship["speed"] * dt
+            # Wrap around
+            if ship["speed"] > 0 and ship["x"] > self.W + 200:
+                ship["x"] = -200.0
+            elif ship["speed"] < 0 and ship["x"] < -200:
+                ship["x"] = float(self.W + 200)
+
         self._lore_timer += dt
-        if self._lore_timer > 4.0:
+        chars_per_sec = 35
+        current_line = LORE_SLIDES[self._lore_idx]
+        self._lore_char = min(len(current_line), int(self._lore_timer * chars_per_sec))
+        if self._lore_timer > 4.5:
             self._lore_timer = 0.0
-            self._lore_index = (self._lore_index + 1) % len(LORE_LINES)
+            self._lore_char = 0
+            self._lore_idx = (self._lore_idx + 1) % len(LORE_SLIDES)
 
     def draw(self, surface: pygame.Surface) -> None:
         if not self._initialized:
             self.init_fonts()
-        surface.fill((2, 2, 8))
-        self._draw_stars(surface)
+        surface.fill((2, 3, 10))
+
+        if self._nebula:
+            self._nebula.draw(surface)
+
+        for star in self._stars:
+            star.draw(surface)
+
+        self._draw_bg_ships(surface)
+        self._draw_faction_strip(surface)
         self._draw_title(surface)
         self._draw_lore(surface)
         self._draw_menu(surface)
         self._draw_footer(surface)
 
-    def _draw_stars(self, surface: pygame.Surface) -> None:
-        for x, y, speed, brightness in self._star_field:
-            t = self._time * speed * 0.3
-            sx = (x + t * 15) % self.width
-            alpha = int(180 * brightness * (0.7 + 0.3 * math.sin(self._time * speed * 2)))
-            c = (alpha, alpha, min(255, alpha + 30))
-            surface.set_at((int(sx), int(y)), c)
+        if self._scanline:
+            surface.blit(self._scanline, (0, 0))
+
+    def _draw_bg_ships(self, surface: pygame.Surface) -> None:
+        for ship_info in self._bg_ships:
+            ghost = pygame.Surface((ship_info["size"] * 4, ship_info["size"] * 4), pygame.SRCALPHA)
+            sid = ship_info["id"]
+            color = FACTION_COLORS.get(
+                "apex_syndicate" if "enforcer" in sid else
+                "ghost_fleet" if "ghost" in sid else
+                "ironveil_trading" if "hauler" in sid else
+                "drift_cartel", (80, 80, 80)
+            )
+            sz = ship_info["size"]
+            draw_ship(ghost, sid, sz * 2, sz * 2, sz * 0.9, color,
+                      angle_deg=90 if ship_info["speed"] > 0 else -90,
+                      engine_glow=True)
+            ghost.set_alpha(ship_info["alpha"])
+            cx = int(ship_info["x"]) - sz * 2
+            cy = int(ship_info["y"]) - sz * 2
+            surface.blit(ghost, (cx, cy))
+
+    def _draw_faction_strip(self, surface: pygame.Surface) -> None:
+        strip_y = self.H - 60
+        factions = list(FACTION_COLORS.keys())
+        spacing = self.W // (len(factions) + 1)
+        for i, fid in enumerate(factions):
+            fx = spacing * (i + 1)
+            draw_faction_logo(surface, fid, fx, strip_y, 14)
 
     def _draw_title(self, surface: pygame.Surface) -> None:
-        font_xl = self.fonts["xl"]
-        font_lg = self.fonts["lg"]
-        font_tag = self.fonts["tag"]
-
         t = self._time
-        pulse = 0.85 + 0.15 * math.sin(t * 1.5)
-        glow_alpha = int(255 * pulse)
+        W, H = self.W, self.H
 
-        title_surf = font_xl.render(TITLE, True, (int(80 * pulse), int(220 * pulse), int(120 * pulse)))
-        tx = self.width // 2 - title_surf.get_width() // 2
-        ty = 80
+        # FRACTURED VOID — large glowing title
+        pulse = 0.88 + 0.12 * math.sin(t * 1.4)
+        color = (int(60 * pulse), int(220 * pulse), int(90 * pulse))
 
-        # Glow effect
-        for offset in range(4, 0, -1):
-            glow = pygame.Surface(title_surf.get_size(), pygame.SRCALPHA)
-            glow.blit(title_surf, (0, 0))
-            glow.set_alpha(glow_alpha // (offset * 3))
-            surface.blit(glow, (tx - offset, ty))
-            surface.blit(glow, (tx + offset, ty))
+        font_xl = self.fonts["xl"]
+        title_surf = font_xl.render(TITLE, True, color)
+        tx = W // 2 - title_surf.get_width() // 2
+        ty = int(H * 0.12)
+
+        # Multi-pass glow
+        for i in range(6, 0, -1):
+            glow_s = font_xl.render(TITLE, True, (20, int(80 * i / 6), 30))
+            glow_s.set_alpha(int(40 * i / 6))
+            surface.blit(glow_s, (tx - i, ty - i // 2))
+            surface.blit(glow_s, (tx + i, ty - i // 2))
 
         surface.blit(title_surf, (tx, ty))
 
-        sub = font_lg.render(SUBTITLE, True, (60, 130, 70))
-        surface.blit(sub, (self.width // 2 - sub.get_width() // 2, ty + 70))
+        # Horizontal lines flanking title
+        title_mid_y = ty + title_surf.get_height() // 2
+        line_alpha = int(160 * pulse)
+        for side_x, end_x in [(tx - 20, 20), (tx + title_surf.get_width() + 20, W - 20)]:
+            line_surf = pygame.Surface((abs(end_x - side_x) + 2, 2), pygame.SRCALPHA)
+            line_surf.fill(color + (line_alpha,))
+            surface.blit(line_surf, (min(side_x, end_x), title_mid_y))
 
-        tag = font_tag.render(TAGLINE, True, (50, 90, 55))
-        surface.blit(tag, (self.width // 2 - tag.get_width() // 2, ty + 105))
+        # Subtitle
+        sub_font = self.fonts["lg"]
+        sub = sub_font.render(SUBTITLE, True, (50, 160, 60))
+        surface.blit(sub, (W // 2 - sub.get_width() // 2, ty + title_surf.get_height() + 8))
+
+        # Tagline
+        tag_font = self.fonts["tag"]
+        tag = tag_font.render(TAGLINE, True, (35, 80, 42))
+        surface.blit(tag, (W // 2 - tag.get_width() // 2, ty + title_surf.get_height() + 46))
 
     def _draw_lore(self, surface: pygame.Surface) -> None:
         font_sm = self.fonts["sm"]
-        start_y = 240
-        visible_count = min(len(LORE_LINES), 8)
-        for i in range(visible_count):
-            line_idx = (self._lore_index + i) % len(LORE_LINES)
-            line = LORE_LINES[line_idx]
-            if not line:
-                continue
-            # Fade in/out for top and bottom lines
-            if i == 0:
-                alpha = int(255 * (self._lore_timer / 4.0))
-            elif i == visible_count - 1:
-                alpha = int(255 * (1 - self._lore_timer / 4.0))
-            else:
-                alpha = 200
+        lore_y = int(self.H * 0.44)
 
-            brightness = max(60, min(200, alpha))
-            color = (int(brightness * 0.3), brightness, int(brightness * 0.4))
-            lbl = font_sm.render(line, True, color)
-            x = self.width // 2 - lbl.get_width() // 2
-            surface.blit(lbl, (x, start_y + i * 20))
+        # Backdrop for lore text
+        lore_w = int(self.W * 0.65)
+        lore_x = self.W // 2 - lore_w // 2
+        bg = pygame.Surface((lore_w, 30), pygame.SRCALPHA)
+        pygame.draw.rect(bg, (4, 10, 6, 140), (0, 0, lore_w, 30))
+        surface.blit(bg, (lore_x, lore_y - 5))
+
+        line = LORE_SLIDES[self._lore_idx][:self._lore_char]
+        # Typing cursor
+        cursor = "|" if int(self._time * 3) % 2 == 0 else ""
+        display = line + cursor
+
+        lbl = font_sm.render(display, True, (80, 200, 90))
+        surface.blit(lbl, (self.W // 2 - lbl.get_width() // 2, lore_y))
+
+        # Dim previous lines
+        prev_y = lore_y - 28
+        for i in range(1, 4):
+            prev_idx = (self._lore_idx - i) % len(LORE_SLIDES)
+            alpha = max(0, 120 - i * 40)
+            prev_lbl = font_sm.render(LORE_SLIDES[prev_idx], True, (30, 90, 35))
+            prev_lbl.set_alpha(alpha)
+            surface.blit(prev_lbl, (self.W // 2 - prev_lbl.get_width() // 2, prev_y))
+            prev_y -= 22
 
     def _draw_menu(self, surface: pygame.Surface) -> None:
         font_md = self.fonts["md"]
-        start_y = self.height - 220
+        font_sm = self.fonts["sm"]
+        W, H = self.W, self.H
+        t = self._time
+
+        menu_y = int(H * 0.56)
+        item_h = 52
+
         for i, item in enumerate(MENU_ITEMS):
             is_sel = i == self.selected
+            iy = menu_y + i * item_h
+            iw = 300
+
             if is_sel:
-                t = self._time
-                pulse = 0.8 + 0.2 * math.sin(t * 3)
+                # Animated selected background
+                pulse = 0.8 + 0.2 * math.sin(t * 3.5)
+                bg_alpha = int(100 * pulse)
+                bg = pygame.Surface((iw, 38), pygame.SRCALPHA)
+                pygame.draw.rect(bg, (10, 40, 15, bg_alpha), (0, 0, iw, 38))
+                pygame.draw.rect(bg, HUD_GREEN + (int(200 * pulse),), (0, 0, iw, 38), 1)
+                surface.blit(bg, (W // 2 - iw // 2, iy - 4))
+
                 color = (int(80 * pulse), int(255 * pulse), int(100 * pulse))
-                prefix = "> "
-                suffix = " <"
+                text = f"> {item} <"
+                glow_text(surface, font_md, text, color,
+                          (W // 2 - font_md.size(text)[0] // 2, iy + 4))
             else:
-                color = (40, 100, 50)
-                prefix = "  "
-                suffix = "  "
-            lbl = font_md.render(f"{prefix}{item}{suffix}", True, color)
-            x = self.width // 2 - lbl.get_width() // 2
-            surface.blit(lbl, (x, start_y + i * 40))
+                color = (25, 80, 30)
+                lbl = font_md.render(f"  {item}  ", True, color)
+                surface.blit(lbl, (W // 2 - lbl.get_width() // 2, iy + 4))
+
+        # Controls hint
+        hint = font_sm.render("Up/Down: Select    Enter: Confirm", True, (20, 50, 25))
+        surface.blit(hint, (W // 2 - hint.get_width() // 2, menu_y + len(MENU_ITEMS) * item_h + 10))
 
     def _draw_footer(self, surface: pygame.Surface) -> None:
-        font_sm = self.fonts["sm"]
-        ver = font_sm.render("v0.1.0  —  Fractured Void  —  github.com/riquo", True, (30, 50, 35))
-        surface.blit(ver, (10, self.height - 20))
-        controls = font_sm.render("Up/Down: Select    Enter: Confirm", True, (30, 60, 35))
-        surface.blit(controls, (self.width - controls.get_width() - 10, self.height - 20))
+        font_xs = self.fonts["xs"]
+        ver = font_xs.render("v0.2.0  —  FRACTURED VOID", True, (20, 45, 25))
+        surface.blit(ver, (10, self.H - 18))
+        link = font_xs.render("github.com/tkhemraj/fractured-void", True, (20, 45, 25))
+        surface.blit(link, (self.W - link.get_width() - 10, self.H - 18))

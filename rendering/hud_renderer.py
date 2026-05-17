@@ -1,307 +1,359 @@
 """
-Wing Commander-style cockpit HUD rendered on top of space.
-Draws: cockpit frame, radar, shield display, weapon status,
-target info panel, speed indicator, and kill stats.
+Wing Commander-style HUD renderer.
+Uses the pre-rendered cockpit frame from cockpit.py.
+Draws all instrument panels in the console area.
+Supports screen shake on hit.
 """
 import math
 import pygame
 from combat.ship_3d import CombatShip
-from combat.combat_engine import CombatEngine
-
-HUD_GREEN = (60, 220, 80)
-HUD_AMBER = (220, 160, 40)
-HUD_RED   = (220, 60, 40)
-HUD_BLUE  = (60, 160, 255)
-HUD_DIM   = (40, 80, 50)
-HUD_WHITE = (200, 200, 200)
-HUD_CYAN  = (60, 220, 220)
-
-
-def _health_color(pct: float) -> tuple:
-    if pct > 0.6:
-        return HUD_GREEN
-    elif pct > 0.3:
-        return HUD_AMBER
-    return HUD_RED
-
-
-def _bar(surface: pygame.Surface, x: int, y: int, w: int, h: int, pct: float, color: tuple, bg: tuple = (20, 30, 20)) -> None:
-    pygame.draw.rect(surface, bg, (x, y, w, h))
-    fill = max(0, int(w * pct))
-    if fill > 0:
-        pygame.draw.rect(surface, color, (x, y, fill, h))
-    pygame.draw.rect(surface, color, (x, y, w, h), 1)
+from rendering.cockpit import build_cockpit, VP_LEFT, VP_RIGHT, VP_TOP, VP_BOTTOM
+from rendering.art import (
+    HUD_GREEN, HUD_GREEN_D, HUD_AMBER, HUD_RED, HUD_CYAN,
+    HUD_DIM, HUD_WHITE, FACTION_COLORS, bar, health_color,
+    draw_panel, glow_text, draw_glow_circle,
+)
 
 
 class HUDRenderer:
     def __init__(self, width: int, height: int):
-        self.width = width
-        self.height = height
-        self.fonts: dict[str, pygame.font.Font] = {}
-        self._cockpit_overlay: pygame.Surface | None = None
-        self._radar_bg: pygame.Surface | None = None
+        self.W = width
+        self.H = height
+        self.fonts: dict = {}
+        self._cockpit_surf: pygame.Surface | None = None
+        self._vp_rect: dict = {}
         self._initialized = False
         self._scan_angle = 0.0
+        self._shake_x = 0
+        self._shake_y = 0
+        self._shake_decay = 0.0
 
-    def init_fonts(self) -> None:
+    def init(self) -> None:
         if self._initialized:
             return
         try:
-            mono = pygame.font.match_font("courier,couriernew,monospace,dejavusansmono")
+            mono = pygame.font.match_font("courier,couriernew,dejavusansmono")
+            self.fonts["xs"] = pygame.font.Font(mono, 11)
             self.fonts["sm"] = pygame.font.Font(mono, 13)
             self.fonts["md"] = pygame.font.Font(mono, 17)
             self.fonts["lg"] = pygame.font.Font(mono, 24)
             self.fonts["xl"] = pygame.font.Font(mono, 36)
         except Exception:
-            self.fonts["sm"] = pygame.font.SysFont("monospace", 13)
-            self.fonts["md"] = pygame.font.SysFont("monospace", 17)
-            self.fonts["lg"] = pygame.font.SysFont("monospace", 24)
-            self.fonts["xl"] = pygame.font.SysFont("monospace", 36)
-        self._build_cockpit_overlay()
+            for k, s in [("xs", 11), ("sm", 13), ("md", 17), ("lg", 24), ("xl", 36)]:
+                self.fonts[k] = pygame.font.SysFont("monospace", s)
+
+        self._cockpit_surf, self._vp_rect = build_cockpit(self.W, self.H)
         self._initialized = True
 
-    def _build_cockpit_overlay(self) -> None:
-        """Build the static cockpit frame that masks the edges of the viewport."""
-        surf = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-        W, H = self.width, self.height
+    def shake(self, intensity: float = 8.0) -> None:
+        import random
+        rng = random.Random()
+        self._shake_x = int(rng.uniform(-intensity, intensity))
+        self._shake_y = int(rng.uniform(-intensity * 0.5, intensity * 0.5))
+        self._shake_decay = 0.0
 
-        # Viewport hole — elliptical clear area in center
-        vx, vy = int(W * 0.08), int(H * 0.10)
-        vw, vh = W - vx * 2, H - vy * 2
+    def update_shake(self, dt: float) -> tuple[int, int]:
+        if self._shake_x == 0 and self._shake_y == 0:
+            return 0, 0
+        self._shake_decay += dt * 15
+        factor = max(0.0, 1.0 - self._shake_decay)
+        ox = int(self._shake_x * factor)
+        oy = int(self._shake_y * factor)
+        if factor <= 0:
+            self._shake_x = self._shake_y = 0
+        return ox, oy
 
-        # Fill everything dark
-        surf.fill((8, 8, 12, 240))
-
-        # Cut out viewport
-        pygame.draw.ellipse(surf, (0, 0, 0, 0), (vx, vy, vw, vh))
-
-        # Cockpit frame border ring
-        pygame.draw.ellipse(surf, (40, 60, 40, 200), (vx - 4, vy - 4, vw + 8, vh + 8), 4)
-        pygame.draw.ellipse(surf, HUD_GREEN + (120,), (vx - 8, vy - 8, vw + 16, vh + 16), 2)
-
-        # Structural ribs at sides
-        rib_color = (20, 35, 20, 180)
-        for i in range(3):
-            xoff = int(W * 0.04) + i * 4
-            pygame.draw.line(surf, rib_color, (xoff, 0), (xoff, H), 3)
-            pygame.draw.line(surf, rib_color, (W - xoff, 0), (W - xoff, H), 3)
-
-        # Bottom console panel
-        pygame.draw.rect(surf, (6, 10, 6, 220), (0, H - int(H * 0.22), W, int(H * 0.22)))
-        pygame.draw.line(surf, HUD_GREEN + (150,), (0, H - int(H * 0.22)), (W, H - int(H * 0.22)), 2)
-
-        self._cockpit_overlay = surf
-
-    def draw(self, surface: pygame.Surface, engine: "CombatEngine", dt: float, ship_name: str) -> None:
+    def draw(self, surface: pygame.Surface, engine, dt: float,
+             ship_name: str, shake_offset: tuple = (0, 0)) -> None:
         if not self._initialized:
-            self.init_fonts()
+            self.init()
 
-        self._scan_angle = (self._scan_angle + dt * 120) % 360
+        self._scan_angle = (self._scan_angle + dt * 110) % 360
 
-        H = self.height
-        W = self.width
+        # Blit cockpit frame (transparent viewport stays clear)
+        ox, oy = shake_offset
+        surface.blit(self._cockpit_surf, (ox, oy))
 
-        # Cockpit frame
-        if self._cockpit_overlay:
-            surface.blit(self._cockpit_overlay, (0, 0))
+        vp = self._vp_rect
+        console_y = vp["y"] + vp["h"] + 4
+        console_h  = self.H - console_y
 
-        panel_y = H - int(H * 0.21)
+        W = self.W
+        panel_m = 12
+        third_w = (W - panel_m * 4) // 3
 
-        self._draw_shield_display(surface, engine, 20, panel_y + 10)
-        self._draw_radar(surface, engine, W // 2 - 80, panel_y + 8)
-        self._draw_weapon_status(surface, engine, W - 240, panel_y + 10)
-        self._draw_target_info(surface, engine, W - 250, 20)
-        self._draw_speed(surface, engine, 20, H // 2 - 60)
-        self._draw_hud_header(surface, engine, ship_name)
+        # Three console panels
+        self._draw_shield_panel(surface, engine,
+                                panel_m, console_y + 4, third_w, console_h - 10)
+        self._draw_radar_panel(surface, engine,
+                               panel_m * 2 + third_w, console_y + 4, third_w, console_h - 10)
+        self._draw_weapon_panel(surface, engine,
+                                panel_m * 3 + third_w * 2, console_y + 4, third_w, console_h - 10)
+
+        # Floating elements inside viewport
         self._draw_crosshair(surface)
+        self._draw_target_info(surface, engine, vp)
+        self._draw_speed_tape(surface, engine, vp)
+        self._draw_header_info(surface, engine, ship_name, vp)
 
-    def _draw_crosshair(self, surface: pygame.Surface) -> None:
-        cx, cy = self.width // 2, self.height // 2
-        size = 12
-        gap = 5
-        color = (100, 255, 100, 180)
-        pygame.draw.line(surface, HUD_GREEN, (cx - size - gap, cy), (cx - gap, cy), 1)
-        pygame.draw.line(surface, HUD_GREEN, (cx + gap, cy), (cx + size + gap, cy), 1)
-        pygame.draw.line(surface, HUD_GREEN, (cx, cy - size - gap), (cx, cy - gap), 1)
-        pygame.draw.line(surface, HUD_GREEN, (cx, cy + gap), (cx, cy + size + gap), 1)
-        pygame.draw.circle(surface, HUD_GREEN, (cx, cy), 3, 1)
-
-    def _draw_shield_display(self, surface: pygame.Surface, engine: "CombatEngine", x: int, y: int) -> None:
+    def _draw_shield_panel(self, surf, engine, px, py, pw, ph):
         font_sm = self.fonts["sm"]
-        font_md = self.fonts["md"]
+        font_xs = self.fonts["xs"]
+        p = engine.player
 
         # Title
-        label = font_sm.render("SHIELDS / ARMOR", True, HUD_DIM)
-        surface.blit(label, (x, y))
-        y += 18
+        surf.blit(font_xs.render("SHIELDS / ARMOR", True, HUD_DIM), (px + 4, py + 2))
 
-        # Ship outline (top view, hexagon-ish)
-        ship_cx, ship_cy = x + 70, y + 55
-        ship_pts = [
-            (ship_cx, ship_cy - 35),
-            (ship_cx + 22, ship_cy - 10),
-            (ship_cx + 22, ship_cy + 20),
-            (ship_cx, ship_cy + 35),
-            (ship_cx - 22, ship_cy + 20),
-            (ship_cx - 22, ship_cy - 10),
-        ]
-        s_pct = engine.player.shield_pct
-        a_pct = engine.player.armor_pct
-        ship_color = _health_color(min(s_pct, a_pct))
-        pygame.draw.polygon(surface, HUD_DIM, ship_pts)
-        pygame.draw.polygon(surface, ship_color, ship_pts, 2)
+        # Ship top-view silhouette
+        mid_x = px + pw // 2
+        mid_y = py + 48
+        sz = min(28, pw // 3)
+        # Draw Cinder Pact from art module
+        from rendering.art import draw_ship, _tint
+        s_pct = p.shield_pct
+        ship_color = health_color(s_pct)
+        draw_ship(surf, "cinder_pact", mid_x, mid_y, sz * 0.9, ship_color, engine_glow=False)
 
         # Shield bar
-        _bar(surface, x, y + 120, 140, 10, s_pct, _health_color(s_pct))
-        lbl = font_sm.render(f"SHD {int(engine.player.shields):>3}", True, _health_color(s_pct))
-        surface.blit(lbl, (x, y + 133))
+        sy = py + sz * 2 + 22
+        surf.blit(font_xs.render("SHD", True, HUD_DIM), (px + 4, sy))
+        color_s = health_color(p.shield_pct)
+        bar(surf, px + 28, sy + 2, pw - 32, 9, p.shield_pct, color_s)
+        surf.blit(font_xs.render(f"{int(p.shields)}", True, color_s), (px + pw - 26, sy))
+        sy += 18
 
         # Armor bar
-        _bar(surface, x, y + 150, 140, 10, a_pct, _health_color(a_pct))
-        lbl2 = font_sm.render(f"ARM {int(engine.player.armor):>3}", True, _health_color(a_pct))
-        surface.blit(lbl2, (x, y + 163))
+        surf.blit(font_xs.render("ARM", True, HUD_DIM), (px + 4, sy))
+        color_a = health_color(p.armor_pct)
+        bar(surf, px + 28, sy + 2, pw - 32, 9, p.armor_pct, color_a)
+        surf.blit(font_xs.render(f"{int(p.armor)}", True, color_a), (px + pw - 26, sy))
+        sy += 20
 
-    def _draw_radar(self, surface: pygame.Surface, engine: "CombatEngine", x: int, y: int) -> None:
-        font_sm = self.fonts["sm"]
-        R = 70
-        cx, cy = x + R, y + R
+        # Energy/throttle
+        surf.blit(font_xs.render("PWR", True, HUD_DIM), (px + 4, sy))
+        bar(surf, px + 28, sy + 2, pw - 32, 9,
+            engine.player_throttle, HUD_CYAN)
+        surf.blit(font_xs.render(f"{int(engine.player_throttle * 100)}%", True, HUD_CYAN),
+                  (px + pw - 30, sy))
 
-        # Radar background
-        pygame.draw.circle(surface, (5, 15, 5), (cx, cy), R)
-        pygame.draw.circle(surface, HUD_DIM, (cx, cy), R, 2)
-        # Grid rings
-        for r in [R // 3, R * 2 // 3]:
-            pygame.draw.circle(surface, HUD_DIM, (cx, cy), r, 1)
-        # Cross hairs
-        pygame.draw.line(surface, HUD_DIM, (cx - R, cy), (cx + R, cy), 1)
-        pygame.draw.line(surface, HUD_DIM, (cx, cy - R), (cx, cy + R), 1)
+    def _draw_radar_panel(self, surf, engine, px, py, pw, ph):
+        font_xs = self.fonts["xs"]
+        R = min(pw // 2 - 8, ph // 2 - 14)
+        cx = px + pw // 2
+        cy = py + R + 12
 
-        # Sweep line
-        sweep_rad = math.radians(self._scan_angle)
-        ex = int(cx + math.cos(sweep_rad) * R)
-        ey = int(cy + math.sin(sweep_rad) * R)
-        pygame.draw.line(surface, HUD_GREEN + (80,), (cx, cy), (ex, ey), 1)
+        # Background
+        pygame.draw.circle(surf, (4, 12, 6), (cx, cy), R)
+        pygame.draw.circle(surf, HUD_DIM, (cx, cy), R, 1)
 
-        # Plot enemies
-        living = [e for e in engine.enemies if e.alive]
-        for ship in living:
+        # Range rings
+        for r_frac in [0.33, 0.67]:
+            pygame.draw.circle(surf, HUD_GREEN_D, (cx, cy), int(R * r_frac), 1)
+
+        # Cardinal lines
+        pygame.draw.line(surf, HUD_GREEN_D, (cx - R, cy), (cx + R, cy), 1)
+        pygame.draw.line(surf, HUD_GREEN_D, (cx, cy - R), (cx, cy + R), 1)
+
+        # Sweep
+        sweep_r = math.radians(self._scan_angle)
+        ex = int(cx + math.cos(sweep_r) * R)
+        ey = int(cy + math.sin(sweep_r) * R)
+        sweep_surf = pygame.Surface((R * 2 + 2, R * 2 + 2), pygame.SRCALPHA)
+        pygame.draw.line(sweep_surf, HUD_GREEN + (60,),
+                         (R + 1, R + 1), (ex - cx + R + 1, ey - cy + R + 1), 2)
+        surf.blit(sweep_surf, (cx - R - 1, cy - R - 1))
+
+        # Enemy blips
+        for ship in engine.enemies:
+            if not ship.alive:
+                continue
             rel = ship.pos - engine.player.pos
             dist = rel.length()
-            if dist < 0.01:
-                continue
             max_range = 1500.0
             d_norm = min(dist / max_range, 1.0)
             angle = math.atan2(rel.x, -rel.z)
             bx = int(cx + math.sin(angle) * d_norm * (R - 5))
             by = int(cy - math.cos(angle) * d_norm * (R - 5))
             is_tgt = ship is engine.current_target
-            color = HUD_RED if is_tgt else HUD_AMBER
-            pygame.draw.circle(surface, color, (bx, by), 4 if is_tgt else 2)
+            if is_tgt:
+                draw_glow_circle(surf, HUD_RED, bx, by, 4, layers=2)
+            else:
+                pygame.draw.circle(surf, HUD_AMBER, (bx, by), 3)
 
         # Player dot
-        pygame.draw.circle(surface, HUD_GREEN, (cx, cy), 3)
+        draw_glow_circle(surf, HUD_GREEN, cx, cy, 3, layers=2)
 
-        label = font_sm.render("RADAR", True, HUD_DIM)
-        surface.blit(label, (cx - 22, y + R * 2 + 5))
+        # Title below radar
+        lbl = self.fonts["xs"].render("RADAR", True, HUD_DIM)
+        surf.blit(lbl, (cx - lbl.get_width() // 2, cy + R + 4))
 
-    def _draw_weapon_status(self, surface: pygame.Surface, engine: "CombatEngine", x: int, y: int) -> None:
+        # Kill counter
+        kills = sum(1 for e in engine.enemies if not e.alive)
+        total = len(engine.enemies)
+        kill_lbl = self.fonts["xs"].render(f"K {kills}/{total}", True, HUD_GREEN)
+        surf.blit(kill_lbl, (px + 4, py + ph - 14))
+
+        # Time
+        t_lbl = self.fonts["xs"].render(f"{int(engine.time_elapsed)}s", True, HUD_DIM)
+        surf.blit(t_lbl, (px + pw - t_lbl.get_width() - 4, py + ph - 14))
+
+    def _draw_weapon_panel(self, surf, engine, px, py, pw, ph):
+        font_xs = self.fonts["xs"]
         font_sm = self.fonts["sm"]
-        font_md = self.fonts["md"]
 
-        lbl = font_sm.render("WEAPONS", True, HUD_DIM)
-        surface.blit(lbl, (x, y))
-        y += 18
+        surf.blit(font_xs.render("WEAPONS", True, HUD_DIM), (px + 4, py + 2))
+        y = py + 16
 
-        # Gun cooldown indicator
+        # Gun readiness
         gun_rdy = engine.player_gun_cooldown <= 0
-        gun_color = HUD_GREEN if gun_rdy else HUD_AMBER
-        gun_lbl = font_md.render("GUN   " + ("READY" if gun_rdy else " COOL"), True, gun_color)
-        surface.blit(gun_lbl, (x, y))
-        y += 22
+        color = HUD_GREEN if gun_rdy else HUD_AMBER
+        txt = "GUN  READY" if gun_rdy else "GUN  RELOADING"
+        surf.blit(font_xs.render(txt, True, color), (px + 4, y))
+        y += 14
+
+        # Gun cooldown mini-bar
+        if not gun_rdy:
+            max_cd = 0.4
+            bar(surf, px + 4, y, pw - 8, 5,
+                1 - engine.player_gun_cooldown / max_cd, HUD_AMBER)
+            y += 8
+
+        y += 4
 
         # Missiles
         for weapon_id, count in engine.player_missile_counts.items():
             color = HUD_GREEN if count > 0 else HUD_DIM
-            short = weapon_id.replace("_", " ").upper()[:12]
-            msl = font_sm.render(f"{short:<12} x{count:>2}", True, color)
-            surface.blit(msl, (x, y))
-            y += 16
+            name = weapon_id.replace("_", " ")[:14].upper()
+            surf.blit(font_xs.render(name, True, color), (px + 4, y))
+            cnt_txt = f"x{count:02}"
+            cnt_lbl = font_xs.render(cnt_txt, True, color)
+            surf.blit(cnt_lbl, (px + pw - cnt_lbl.get_width() - 4, y))
+            # Dot indicators
+            for i in range(min(count, 8)):
+                dot_x = px + 4 + i * (pw - 8) // 8
+                pygame.draw.circle(surf, color, (dot_x + 4, y + 14), 3)
+            y += 22
 
-        # Missile cooldown bar
+        # Missile cooldown
         if engine.player_missile_cooldown > 0:
-            max_cd = 4.0
-            pct = 1.0 - (engine.player_missile_cooldown / max_cd)
-            _bar(surface, x, y + 4, 160, 6, pct, HUD_AMBER)
-            surface.blit(font_sm.render("MSL RELOAD", True, HUD_AMBER), (x, y + 13))
+            bar(surf, px + 4, py + ph - 18, pw - 8, 7,
+                1 - engine.player_missile_cooldown / 4.0, HUD_AMBER)
+            surf.blit(font_xs.render("MSL RELOADING", True, HUD_AMBER), (px + 4, py + ph - 28))
 
-    def _draw_target_info(self, surface: pygame.Surface, engine: "CombatEngine", x: int, y: int) -> None:
-        font_sm = self.fonts["sm"]
-        font_md = self.fonts["md"]
+        # Afterburner indicator
+        if engine.player_afterburner:
+            glow_text(surf, font_sm, "AFTERBURN", HUD_CYAN,
+                      (px + pw // 2 - 40, py + ph - 42))
+
+    def _draw_crosshair(self, surf):
+        cx, cy = self.W // 2, int(self.H * (VP_TOP + (VP_BOTTOM - VP_TOP) * 0.5))
+        size = 14
+        gap  = 6
+        pygame.draw.line(surf, HUD_GREEN, (cx - size - gap, cy), (cx - gap, cy), 1)
+        pygame.draw.line(surf, HUD_GREEN, (cx + gap, cy), (cx + size + gap, cy), 1)
+        pygame.draw.line(surf, HUD_GREEN, (cx, cy - size - gap), (cx, cy - gap), 1)
+        pygame.draw.line(surf, HUD_GREEN, (cx, cy + gap), (cx, cy + size + gap), 1)
+        pygame.draw.circle(surf, HUD_GREEN, (cx, cy), 3, 1)
+        pygame.draw.circle(surf, HUD_GREEN, (cx, cy), size + gap, 1)
+
+    def _draw_target_info(self, surf, engine, vp):
         target = engine.current_target
+        font_xs = self.fonts["xs"]
+        font_sm = self.fonts["sm"]
+
+        px = vp["x"] + 6
+        py = vp["y"] + 6
+        pw = 190
+
         if not target:
-            no_tgt = font_sm.render("NO TARGET", True, HUD_DIM)
-            surface.blit(no_tgt, (x + 20, y))
+            surf.blit(font_xs.render("NO TARGET", True, HUD_DIM), (px, py))
             return
 
         dist = target.distance_to(engine.player)
         angle = engine.player.angle_to(target)
+        faction_color = FACTION_COLORS.get(target.faction, HUD_WHITE)
 
-        lbl = font_sm.render("TARGET", True, HUD_DIM)
-        surface.blit(lbl, (x, y))
-        y += 16
+        # Semi-transparent backdrop
+        bg = pygame.Surface((pw, 110), pygame.SRCALPHA)
+        pygame.draw.rect(bg, (4, 10, 6, 180), (0, 0, pw, 110))
+        pygame.draw.rect(bg, HUD_GREEN_D + (150,), (0, 0, pw, 110), 1)
+        surf.blit(bg, (px - 2, py - 2))
 
-        name_lbl = font_md.render(target.ship_id.replace("_", " ").upper(), True, HUD_RED)
-        surface.blit(name_lbl, (x, y))
-        y += 22
+        surf.blit(font_xs.render("TARGET", True, HUD_DIM), (px, py))
+        py += 14
+        tgt_name = target.ship_id.replace("_", " ").upper()[:20]
+        glow_text(surf, font_sm, tgt_name, HUD_RED, (px, py))
+        py += 20
+        surf.blit(font_xs.render(target.faction.replace("_", " ").upper() if target.faction else "UNKNOWN",
+                                 True, faction_color), (px, py))
+        py += 14
+        surf.blit(font_xs.render(f"DIST  {int(dist):>5}m", True, HUD_WHITE), (px, py))
+        py += 13
+        surf.blit(font_xs.render(f"ANGLE {int(angle):>4}°",  True, HUD_WHITE), (px, py))
+        py += 16
+        bar(surf, px, py, pw - 4, 7, target.shield_pct, health_color(target.shield_pct))
+        surf.blit(font_xs.render("S", True, HUD_DIM), (px + pw - 4, py - 1))
+        py += 10
+        bar(surf, px, py, pw - 4, 7, target.armor_pct, health_color(target.armor_pct))
+        surf.blit(font_xs.render("A", True, HUD_DIM), (px + pw - 4, py - 1))
 
-        faction = target.faction.replace("_", " ").upper() if target.faction else "UNKNOWN"
-        f_lbl = font_sm.render(faction, True, HUD_AMBER)
-        surface.blit(f_lbl, (x, y))
-        y += 18
+    def _draw_speed_tape(self, surf, engine, vp):
+        font_xs = self.fonts["xs"]
+        x = vp["x"] + vp["w"] - 54
+        y = vp["y"] + 6
+        h = int(vp["h"] * 0.55)
 
-        dist_lbl = font_sm.render(f"DIST  {int(dist):>5}m", True, HUD_WHITE)
-        surface.blit(dist_lbl, (x, y))
-        y += 16
+        # Backdrop
+        bg = pygame.Surface((50, h + 28), pygame.SRCALPHA)
+        pygame.draw.rect(bg, (4, 10, 6, 180), (0, 0, 50, h + 28))
+        pygame.draw.rect(bg, HUD_GREEN_D + (140,), (0, 0, 50, h + 28), 1)
+        surf.blit(bg, (x - 2, y - 2))
 
-        ang_lbl = font_sm.render(f"ANGLE {int(angle):>3}deg", True, HUD_WHITE)
-        surface.blit(ang_lbl, (x, y))
-        y += 20
-
-        _bar(surface, x, y, 160, 8, target.shield_pct, _health_color(target.shield_pct))
-        surface.blit(font_sm.render("SHD", True, HUD_DIM), (x + 165, y - 2))
-        y += 12
-
-        _bar(surface, x, y, 160, 8, target.armor_pct, _health_color(target.armor_pct))
-        surface.blit(font_sm.render("ARM", True, HUD_DIM), (x + 165, y - 2))
-
-    def _draw_speed(self, surface: pygame.Surface, engine: "CombatEngine", x: int, y: int) -> None:
-        font_sm = self.fonts["sm"]
-        speed = engine.player.velocity.length()
-        ab = engine.player_afterburner
-
-        lbl = font_sm.render("SPEED", True, HUD_DIM)
-        surface.blit(lbl, (x, y))
+        surf.blit(font_xs.render("SPD", True, HUD_DIM), (x, y))
         y += 14
 
-        max_spd = engine.player.afterburner_speed
-        _bar(surface, x, y, 12, 80, min(1.0, speed / max_spd), HUD_GREEN if not ab else HUD_CYAN, bg=(10, 20, 10))
-        spd_lbl = font_sm.render(f"{int(speed):>3}", True, HUD_CYAN if ab else HUD_GREEN)
-        surface.blit(spd_lbl, (x - 2, y + 83))
+        speed = engine.player.velocity.length()
+        max_s = engine.player.afterburner_speed
+        pct   = min(1.0, speed / max(1, max_s))
+        ab    = engine.player_afterburner
+        color = HUD_CYAN if ab else HUD_GREEN
+
+        # Vertical tape bar
+        tape_x = x + 18
+        pygame.draw.rect(surf, (8, 18, 10), (tape_x, y, 14, h))
+        fill_h = int(h * pct)
+        if fill_h > 0:
+            pygame.draw.rect(surf, color, (tape_x, y + h - fill_h, 14, fill_h))
+        pygame.draw.rect(surf, color, (tape_x, y, 14, h), 1)
+
+        # Tick marks
+        for i in range(0, 5):
+            ty = y + h - int(h * i / 4)
+            pygame.draw.line(surf, HUD_DIM, (tape_x - 3, ty), (tape_x, ty), 1)
+
+        y += h + 4
+        spd_lbl = font_xs.render(f"{int(speed)}", True, color)
+        surf.blit(spd_lbl, (x + 25 - spd_lbl.get_width() // 2, y))
+        y += 12
         if ab:
-            ab_lbl = font_sm.render("AB", True, HUD_CYAN)
-            surface.blit(ab_lbl, (x - 2, y + 97))
+            glow_text(surf, font_xs, "AB", HUD_CYAN, (x + 14, y))
 
-    def _draw_hud_header(self, surface: pygame.Surface, engine: "CombatEngine", ship_name: str) -> None:
+    def _draw_header_info(self, surf, engine, ship_name, vp):
+        font_xs = self.fonts["xs"]
         font_sm = self.fonts["sm"]
-        W = self.width
 
+        # Top bar center — ship name and heading
+        cx = self.W // 2
+        ty = 4
+        glow_text(surf, font_sm, ship_name.upper(), HUD_GREEN,
+                  (cx - 60, ty + 2))
+
+        # Top bar far left — combat timer
+        lbl = font_xs.render(f"T+{int(engine.time_elapsed):>3}s", True, HUD_DIM)
+        surf.blit(lbl, (vp["x"] + 8, ty + 6))
+
+        # Top bar far right — kills
         kills = sum(1 for e in engine.enemies if not e.alive)
         total = len(engine.enemies)
-        kills_lbl = font_sm.render(f"KILLS {kills}/{total}", True, HUD_GREEN)
-        surface.blit(kills_lbl, (W // 2 - 50, 12))
-
-        time_lbl = font_sm.render(f"{int(engine.time_elapsed):>4}s", True, HUD_DIM)
-        surface.blit(time_lbl, (W - 60, 12))
-
-        ship_lbl = font_sm.render(ship_name.upper(), True, HUD_DIM)
-        surface.blit(ship_lbl, (12, 12))
+        k_lbl = font_xs.render(f"KILLS {kills}/{total}", True, HUD_GREEN)
+        surf.blit(k_lbl, (vp["x"] + vp["w"] - k_lbl.get_width() - 8, ty + 6))
