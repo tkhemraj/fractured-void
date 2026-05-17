@@ -58,20 +58,49 @@ class NebulaLayer:
     def __init__(self, W, H, seed=13):
         self._surf = pygame.Surface((W, H), pygame.SRCALPHA)
         rng = random.Random(seed)
+        # Richer palette: multiple complementary color pairs
         palettes = [
-            [(80, 40, 120), (40, 80, 140), (100, 40, 60)],
-            [(40, 100, 80), (60, 40, 120), (80, 60, 40)],
-            [(20, 60, 100), (100, 40, 80), (40, 80, 60)],
+            [(90, 30, 140), (40, 70, 160), (120, 40, 70), (20, 50, 120)],
+            [(30, 100, 90), (70, 30, 130), (90, 60, 20), (40, 80, 140)],
+            [(20, 50, 110), (110, 35, 90), (45, 90, 55), (80, 50, 20)],
+            [(120, 40, 20), (40, 100, 140), (80, 20, 120), (20, 120, 80)],
         ]
         pal = rng.choice(palettes)
-        for _ in range(10):
+
+        # Large background nebula clouds
+        for _ in range(6):
+            cx = rng.randint(-W // 4, W + W // 4)
+            cy = rng.randint(-H // 4, H + H // 4)
+            r  = rng.randint(220, 550)
+            col = rng.choice(pal)
+            for i in range(r, 0, -max(1, r // 18)):
+                t = i / r
+                alpha = int(25 * t * (1 - t) * 4.2)
+                pygame.draw.circle(self._surf, col + (alpha,), (cx, cy), i)
+
+        # Medium bright filaments / wisps
+        for _ in range(8):
             cx = rng.randint(0, W)
             cy = rng.randint(0, H)
-            r  = rng.randint(100, 350)
+            r  = rng.randint(60, 160)
             col = rng.choice(pal)
-            for i in range(r, 0, -max(1, r // 14)):
-                alpha = int(18 * (i / r) * (1 - i / r) * 4)
-                pygame.draw.circle(self._surf, col + (alpha,), (cx, cy), i)
+            bright = tuple(min(255, c + 40) for c in col)
+            for i in range(r, 0, -max(1, r // 10)):
+                t = i / r
+                alpha = int(18 * t * (1 - t) * 5)
+                pygame.draw.circle(self._surf, bright + (alpha,), (cx, cy), i)
+
+        # Small bright star-forming knots
+        for _ in range(12):
+            kx = rng.randint(0, W)
+            ky = rng.randint(0, H)
+            kr = rng.randint(10, 35)
+            kcol = rng.choice(pal)
+            kbright = tuple(min(255, c + 80) for c in kcol)
+            for i in range(kr, 0, -max(1, kr // 6)):
+                t = i / kr
+                alpha = int(30 * (1 - t) ** 1.5)
+                pygame.draw.circle(self._surf, kbright + (alpha,), (kx, ky), i)
 
     def draw(self, surf):
         surf.blit(self._surf, (0, 0))

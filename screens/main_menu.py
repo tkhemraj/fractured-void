@@ -58,18 +58,30 @@ class NebulaBackground:
         rng = random.Random(42)
         self._surf = pygame.Surface((W, H), pygame.SRCALPHA)
         palettes = [
-            [(30, 10, 60), (10, 30, 80), (60, 10, 40)],
-            [(10, 40, 60), (40, 10, 70), (20, 50, 30)],
+            [(60, 10, 100), (15, 30, 110), (90, 15, 60), (20, 60, 90)],
+            [(15, 55, 80), (55, 10, 100), (25, 65, 35), (90, 30, 20)],
         ]
         pal = rng.choice(palettes)
-        for _ in range(12):
-            cx = rng.randint(0, W)
-            cy = rng.randint(0, H)
-            r  = rng.randint(150, 500)
+        # Large background washes
+        for _ in range(8):
+            cx = rng.randint(-W // 4, W + W // 4)
+            cy = rng.randint(-H // 4, H + H // 4)
+            r  = rng.randint(200, 600)
             col = rng.choice(pal)
-            for i in range(r, 0, -max(1, r // 12)):
-                alpha = int(20 * (i / r) * (1 - i / r) * 4)
+            for i in range(r, 0, -max(1, r // 16)):
+                t = i / r
+                alpha = int(22 * t * (1 - t) * 4.5)
                 pygame.draw.circle(self._surf, col + (alpha,), (cx, cy), i)
+        # Bright core knots
+        for _ in range(10):
+            kx = rng.randint(0, W)
+            ky = rng.randint(0, H)
+            kr = rng.randint(20, 80)
+            kcol = rng.choice(pal)
+            kbright = tuple(min(255, c + 70) for c in kcol)
+            for i in range(kr, 0, -max(1, kr // 8)):
+                alpha = int(28 * (1 - i / kr) ** 1.2)
+                pygame.draw.circle(self._surf, kbright + (alpha,), (kx, ky), i)
 
     def draw(self, surf):
         surf.blit(self._surf, (0, 0))

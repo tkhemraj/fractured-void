@@ -111,6 +111,7 @@ def main() -> None:
                 current_screen = "main_menu"
 
         elif new_screen == "sector_map":
+            trading.close()
             if combat.engine and combat.engine.result == "victory":
                 kills = len([e for e in combat.engine.enemies if not e.alive])
                 salvage = 500 * kills

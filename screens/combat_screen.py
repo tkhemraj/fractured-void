@@ -6,6 +6,7 @@ import pygame
 from combat.combat_engine import CombatEngine
 from rendering.space_renderer import SpaceRenderer
 from rendering.hud_renderer import HUDRenderer
+from rendering.face_cam import face_cams
 from engine.event_bus import bus
 
 
@@ -61,7 +62,13 @@ class CombatScreen:
         bus.subscribe("missile_fired", self._on_missile_fired)
         bus.subscribe("combat_ended", self._on_combat_ended)
 
+        # Activate face cam for primary enemy faction
+        if enemies:
+            primary_faction = enemies[0].get("faction", "")
+            face_cams.start_combat(primary_faction, abs(hash(primary_faction + ship_name)) % 999)
+
     def stop(self) -> None:
+        face_cams.stop_combat()
         try:
             bus.unsubscribe("player_hit", self._on_player_hit)
             bus.unsubscribe("enemy_destroyed", self._on_enemy_destroyed)
@@ -144,12 +151,36 @@ class CombatScreen:
             msg["timer"] += dt
         self._flash_messages = [m for m in self._flash_messages if m["timer"] < m["duration"]]
 
+        # Update face cam emotion based on combat state
+        self._update_face_cam_emotion()
+        face_cams.update(dt)
+
         if self.engine.result:
             self.result_timer += dt
             if self.result_timer > 4.0 and not self.result_shown:
                 return "sector_map"
 
         return None
+
+    def _update_face_cam_emotion(self) -> None:
+        if not self.engine:
+            return
+        target = self.engine.current_target
+        if not target or not target.alive:
+            return
+        hp_pct = target.hull / max(1, target.max_hull)
+        player_hp = self.engine.player.hull / max(1, self.engine.player.max_hull)
+        if hp_pct < 0.25:
+            emotion = "dying"
+        elif hp_pct < 0.50:
+            emotion = "scared"
+        elif player_hp < 0.40:
+            emotion = "taunting"
+        elif self.engine.time_elapsed < 8.0:
+            emotion = "neutral"
+        else:
+            emotion = "angry"
+        face_cams.set_combat_emotion(emotion)
 
     def draw(self, surface: pygame.Surface) -> None:
         if not self.engine:
@@ -165,6 +196,7 @@ class CombatScreen:
         self.hud.draw(surface, self.engine, 0.016, self.ship_name, shake_offset)
         self._draw_flash_messages(surface)
         self._draw_controls_hint(surface)
+        face_cams.draw_combat(surface, self.width, self.height)
 
     def _draw_flash_messages(self, surface: pygame.Surface) -> None:
         if not self._flash_messages or not self.hud.fonts:

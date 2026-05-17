@@ -1,0 +1,51 @@
+{
+  "apex_syndicate": {
+    "neutral":   ["Apex combat protocol active.", "You made a mistake today.", "Stand down and face tribunal.", "APEX does not negotiate with deserters."],
+    "taunting":  ["Discharged... and now dead.", "You should have stayed retired, Korr.", "This ends your little rebellion.", "There is no running from APEX."],
+    "angry":     ["Stop evading and fight!", "You're wasting my time!", "You'll regret every shot you've fired.", "I will end this personally."],
+    "scared":    ["Requesting backup — sector compromised!", "You're better than I expected.", "Stand down. You'll live. I promise.", "This is not in my orders—"],
+    "dying":     ["Tell Voss... I tried.", "APEX will send more. Many more.", "You win nothing. Nothing.", "Remember this face."]
+  },
+  "helix_commerce": {
+    "neutral":   ["Helix Commerce vessel. State your business.", "This corridor is Helix property.", "Interference with Helix assets is a Class-4 violation.", "Please cooperate and this will be painless."],
+    "taunting":  ["Helix protects its investments.", "You are an uninsured liability.", "Your ship isn't worth the salvage fee.", "We've already filed the incident report."],
+    "angry":     ["This is highly irregular!", "Do you know how much that cost?!", "I'll have your license revoked!", "You're destroying company property!"],
+    "scared":    ["I'll double whatever they're paying you!", "This wasn't in the quarterly risk assessment!", "Please — I have family in sector 12!", "I surrender! Properly! With paperwork!"],
+    "dying":     ["Helix will litigate your estate.", "I'm filing this under... force majeure.", "...worth more than you'll ever know.", "The board will hear of this."]
+  },
+  "ironveil_trading": {
+    "neutral":   ["Ironveil vessel. You are in restricted space.", "Move along. This sector is under contract.", "Business is business. Make this quick.", "We have no quarrel if you turn back."],
+    "taunting":  ["You're outgunned and outclassed.", "Ironveil has been doing this for a century.", "Another independent. How quaint.", "The market always corrects itself."],
+    "angry":     ["You've damaged Ironveil property.", "This will come out of someone's contract.", "Every shot costs you more than you know.", "Stop. Fighting. Back."],
+    "scared":    ["This wasn't in the contract!", "Let's renegotiate. Right now.", "I can make this worth your while.", "We can find a mutually beneficial—"],
+    "dying":     ["The old CEO will... hear of this.", "Ironveil outlasted empires. We'll outlast you.", "...should have taken the severance package.", "Close the... position."]
+  },
+  "drift_cartel": {
+    "neutral":   ["Easy there, friend. Wrong sector.", "Hand over the cargo. Simple transaction.", "We can do this the fast way or the slower way.", "Nothing personal. Business."],
+    "taunting":  ["Easy credits, baby.", "Hah! That the best you've got?", "Your ship's gonna fund my next six months.", "Oh you're actually fighting back. Cute."],
+    "angry":     ["You scratched my paint!", "Do you have ANY idea what I paid for this hull?!", "I will actually end you now.", "Stop MOVING!"],
+    "scared":    ["Okay okay, we can deal!", "Where did you learn to fly like that?!", "You want the cargo? TAKE the cargo!", "I'm just a contractor, I swear!"],
+    "dying":     ["Tell Slick I died... with dignity.", "You know what? Respect.", "...spend it well.", "I almost had you."]
+  },
+  "the_remnant": {
+    "neutral":   ["Hold there. Who are you with?", "This is Remnant space. State your allegiance.", "We don't want trouble. Turn back.", "Can't let you through. Not today."],
+    "taunting":  ["For the free sectors!", "We fight for everyone who can't.", "Syndicates never expected this much resistance.", "You can't buy what we're fighting for."],
+    "angry":     ["You're on the wrong side of this!", "Stand down — we don't want your blood!", "Do you know what Apex did to our colony?!", "Stop making this harder!"],
+    "scared":    ["Just go. Please. Just go.", "I didn't sign up for someone like you.", "We'll call it even. Disappear.", "My family is on the Remnant Hope — please."],
+    "dying":     ["Tell Mira Dahl... we held the line.", "The cause survives us.", "...worth it. All of it.", "Don't let them win."]
+  },
+  "ghost_fleet": {
+    "neutral":   ["[ORGANIC VESSEL DETECTED]", "[INITIATING ASSESSMENT PROTOCOL]", "[YOU ARE IN RESTRICTED SPACE]", "[COMPLY OR BE REMOVED]"],
+    "taunting":  ["[YOUR TRAJECTORY IS FUTILE]", "[WE HAVE ENDED THOUSANDS LIKE YOU]", "[RESISTANCE CLASSIFICATION: NEGLIGIBLE]", "[YOUR WEAPONS ARE INSUFFICIENT]"],
+    "angry":     ["[ANOMALOUS COMBAT EFFECTIVENESS DETECTED]", "[RECALIBRATING THREAT ASSESSMENT]", "[THIS WAS NOT ANTICIPATED]", "[YOU SHOULD NOT EXIST AT THIS LEVEL]"],
+    "scared":    ["[SYSTEMS COMPROMISED — UNEXPECTED]", "[REQUESTING FLEET COORDINATION]", "[THIS UNIT IS EXPERIENCING... DIFFICULTY]", "[YOU ARE NOT WHAT WAS PREDICTED]"],
+    "dying":     ["[WE REMEMBER YOU NOW]", "[THE SIGNAL WAS CORRECT]", "[THIS UNIT'S DATA WILL BE PRESERVED]", "[WE WILL MEET AGAIN IN THE FRACTURE]"]
+  },
+  "port_greetings": {
+    "apex_syndicate":   ["Welcome to APEX-controlled space. Keep it clean.", "All cargo subject to inspection. Move along.", "State your business. Quickly.", "Apex Port Authority. Manifest, please."],
+    "helix_commerce":   ["Welcome, traveler! Helix Port — your comfort is our brand.", "All medical supplies priced per current market index.", "Helix thanks you for your business. Stay healthy!", "You're looking at our finest selection today."],
+    "ironveil_trading": ["Ironveil Station. What are you buying?", "No credit? No docking. Simple.", "We deal in product, not conversation.", "Fair prices. No haggling. Ironveil policy."],
+    "drift_cartel":     ["..you didn't see this port. Understood?", "Cash only. No receipts. No names.", "Welcome to the only honest port in twelve sectors.", "What do you need, and how fast do you need it?"],
+    "the_remnant":      ["Every credit here goes to the cause. Fair trade.", "Welcome. You're safe here. Apex won't find this place.", "Free port, free people. What do you need?", "Trade fair and we'll protect each other."]
+  }
+}

@@ -66,10 +66,10 @@ class CombatEngine:
         angle_step = (2 * math.pi) / max(len(enemies), 1)
         for i, enemy_spec in enumerate(enemies):
             angle = i * angle_step
-            dist = self.rng.uniform(600, 900)
+            dist = self.rng.uniform(300, 500)
             pos = Vec3(
-                math.cos(angle) * dist * 0.5,
-                self.rng.uniform(-50, 50),
+                math.cos(angle) * dist * 0.3,
+                self.rng.uniform(-30, 30),
                 -dist,
             )
             ship = CombatShip(

@@ -8,6 +8,7 @@ import pygame
 from engine.mission_manager import missions as mission_mgr
 from engine.game_state import GameState
 from audio.sound_gen import sounds
+from rendering.portraits import PortraitRenderer as _ProceduralPortrait
 
 
 class PortraitRenderer:
@@ -132,6 +133,7 @@ class MissionBriefingScreen:
         self.state = "list"
         self._all_chars: dict = {}
         self._game_state: GameState | None = None
+        self._portrait_cache: dict[str, _ProceduralPortrait] = {}
 
     def init_fonts(self) -> None:
         if self._initialized:
@@ -292,7 +294,13 @@ class MissionBriefingScreen:
         port_w, port_h = 280, 340
         port_x, port_y = 30, 60
         if char:
-            PortraitRenderer.draw(surface, char, port_x, port_y, port_w, port_h)
+            char_key = char.get("id", char.get("name", "unknown"))
+            faction_id = char.get("faction", char.get("faction_id", "the_remnant"))
+            seed = abs(hash(char_key)) % 9999
+            if char_key not in self._portrait_cache:
+                self._portrait_cache[char_key] = _ProceduralPortrait(faction_id, seed)
+            portrait = self._portrait_cache[char_key]
+            portrait.draw(surface, pygame.Rect(port_x, port_y, port_w, port_h), "neutral")
             name_lbl = font_md.render(char.get("name", ""), True, (180, 255, 180))
             surface.blit(name_lbl, (port_x, port_y + port_h + 8))
             title_lbl = font_sm.render(char.get("title", ""), True, (80, 160, 80))

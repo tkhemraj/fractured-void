@@ -5,6 +5,7 @@ Buy and sell commodities, with supply/demand-based pricing.
 import pygame
 from world.sector import Port
 from engine.game_state import GameState, CargoHold
+from rendering.face_cam import face_cams
 
 
 class TradingScreen:
@@ -51,6 +52,13 @@ class TradingScreen:
         self.trade_qty = 1
         self.message = ""
         self._build_item_list()
+        # Show port master face cam
+        faction_id = getattr(port, "faction", "") or ""
+        if faction_id:
+            face_cams.enter_port(faction_id)
+
+    def close(self) -> None:
+        face_cams.leave_port()
 
     def _build_item_list(self) -> None:
         self._items = []
@@ -131,6 +139,7 @@ class TradingScreen:
 
     def update(self, dt: float) -> None:
         self.message_timer += dt
+        face_cams.update(dt)
 
     def draw(self, surface: pygame.Surface) -> None:
         if not self._initialized:
@@ -141,6 +150,7 @@ class TradingScreen:
         self._draw_cargo_panel(surface)
         self._draw_message(surface)
         self._draw_controls(surface)
+        face_cams.draw_port(surface, self.width, self.height)
 
     def _draw_header(self, surface: pygame.Surface) -> None:
         if not self.port:
